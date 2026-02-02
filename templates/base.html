@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - QuickList AI</title>
+    <!-- Your CSS link would go here. For simplicity, we'll use inline styles in other files. -->
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+    <style>
+        body { max-width: 900px; }
+        .alert { padding: 1rem; border-radius: 5px; margin-bottom: 1rem; }
+        .alert-success { background-color: #d4edda; color: #155724; }
+        .alert-danger { background-color: #f8d7da; color: #721c24; }
+        .alert-info { background-color: #d1ecf1; color: #0c5460; }
+        .alert-warning { background-color: #fff3cd; color: #856404; }
+        nav { display: flex; justify-content: space-between; align-items: center; }
+        nav .user-info { display: flex; align-items: center; gap: 1rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="{{ url_for('index') }}"><h3>QuickList AI</h3></a>
+            <div class="user-info">
+                {% if current_user.is_authenticated %}
+                    {% if current_user.subscription_status == 'trial' and (datetime.utcnow() < current_user.trial_end_date) %}
+                        <mark>Trial ends in {{ (current_user.trial_end_date - datetime.utcnow()).days + 1 }} day(s)</mark>
+                    {% endif %}
+                    <a href="{{ url_for('manage_subscription') }}">My Subscription</a>
+                    <span>Hello, {{ current_user.username }}!</span>
+                    <a href="{{ url_for('logout') }}" role="button">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" role="button">Login</a>
+                    <a href="{{ url_for('register') }}" role="button">Register</a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
