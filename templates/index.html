@@ -11,12 +11,30 @@
 
 <!-- SECTION 1: UPLOAD -->
 <section id="upload-section">
+    <style>
+    .button-container { margin-top: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
+    .button-container p { margin: 0; color: #888; text-align: center; }
+    .button-primary { background-color: var(--primary-color); }
+    .button-secondary { background-color: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); }
+</style>
     <h2>Step 1: Find Your Item</h2>
     <form id="upload-form">
         <label for="file-input">Upload Photo(s)</label>
         <input type="file" id="file-input" required>
         <button type="submit">Find My Item</button>
     </form>
+    <!-- Add this new container for the buttons -->
+<div id="action-buttons" class="button-container hidden">
+    <p>Now, choose your goal:</p>
+    <div>
+        <button id="btn-identify-primary" class="button-primary">Identify Primary Item</button>
+        <p><small>Find the single, most prominent object in the photo.</small></p>
+    </div>
+    <div>
+        <button id="btn-scan-all" class="button-secondary">Scan for All Items & Rank by Value</button>
+        <p><small>Detects multiple objects and sorts them by price.</small></p>
+    </div>
+</div>
     <div id="loading-indicator" class="hidden">
         <p>🔎 Analyzing image and searching for matches...</p>
     </div>
@@ -42,7 +60,71 @@
         <input type="number" id="listing-price" step="0.01">
     </form>
 </section>
+<script>
+    // ... (keep existing variable declarations)
 
+    const actionButtons = document.getElementById('action-buttons');
+    const btnIdentifyPrimary = document.getElementById('btn-identify-primary');
+    const btnScanAll = document.getElementById('btn-scan-all');
+    const fileInput = document.getElementById('file-input');
+
+    // Show the buttons after a file is selected
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            actionButtons.classList.remove('hidden');
+        } else {
+            actionButtons.classList.add('hidden');
+        }
+    });
+
+    // Add event listeners for each button
+    btnIdentifyPrimary.addEventListener('click', () => {
+        handleImageAnalysis('single');
+    });
+
+    btnScanAll.addEventListener('click', () => {
+        handleImageAnalysis('multi');
+    });
+
+    // This new function replaces your old 'submit' event listener
+    async function handleImageAnalysis(mode) {
+        if (fileInput.files.length === 0) {
+            alert("Please select a file to upload.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('mode', mode); // <-- The crucial parameter
+
+        loadingIndicator.classList.remove('hidden');
+        actionButtons.classList.add('hidden');
+        uploadForm.classList.add('hidden');
+
+        try {
+            const response = await fetch('/api/identify-item', { 
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (data.error) { throw new Error(data.error); }
+            
+            productMatches = data.matches;
+            renderMatches(); // Your existing function to display results
+
+            uploadSection.classList.add('hidden');
+            confirmationSection.classList.remove('hidden');
+        } catch (error) {
+            console.error(`Error during '${mode}' analysis:`, error);
+            alert("Could not analyze the image. Please try again.");
+            uploadSection.classList.remove('hidden');
+            uploadForm.classList.remove('hidden');
+            actionButtons.classList.remove('hidden');
+        } finally {
+            loadingIndicator.classList.add('hidden');
+        }
+    }
+</script>
 <script>
     let productMatches = [];
     let confirmedProduct = {};
