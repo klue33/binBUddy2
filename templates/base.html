@@ -3,37 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} - QuickList AI</title>
-    <!-- Your CSS link would go here. For simplicity, we'll use inline styles in other files. -->
+    
+    <!-- Title block that child templates can override -->
+    <title>{% if title %}{{ title }} - {% endif %}QuickList AI</title>
+    
+    <!-- External Libraries via CDN -->
+    <!-- A simple, classless CSS framework for clean styling -->
     <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
-     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js" defer></script>
-    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
-
+    <!-- Cropper.js for image cropping functionality -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js" defer></script>
+    
+    <!-- Custom styles for the application layout and alerts -->
     <style>
-        body { max-width: 900px; }
-        .alert { padding: 1rem; border-radius: 5px; margin-bottom: 1rem; }
-        .alert-success { background-color: #d4edda; color: #155724; }
-        .alert-danger { background-color: #f8d7da; color: #721c24; }
-        .alert-info { background-color: #d1ecf1; color: #0c5460; }
-        .alert-warning { background-color: #fff3cd; color: #856404; }
-        nav { display: flex; justify-content: space-between; align-items: center; }
-        nav .user-info { display: flex; align-items: center; gap: 1rem; }
+        body {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        header {
+            margin-bottom: 2rem;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav .brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        nav .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        /* Styles for flashed messages (alerts) */
+        .alert {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+        }
+        .alert-success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .alert-danger  { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .alert-info    { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        .alert-warning { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
     </style>
 </head>
 <body>
+
     <header>
         <nav>
-            <a href="{{ url_for('index') }}"><h3>QuickList AI</h3></a>
+            <a href="{{ url_for('index') }}" class="brand">QuickList AI</a>
+            
             <div class="user-info">
                 {% if current_user.is_authenticated %}
+                    <!-- Display trial status message if applicable -->
                     {% if current_user.subscription_status == 'trial' and (datetime.utcnow() < current_user.trial_end_date) %}
                         <mark>Trial ends in {{ (current_user.trial_end_date - datetime.utcnow()).days + 1 }} day(s)</mark>
                     {% endif %}
+                    
+                    <!-- Links for authenticated users -->
                     <a href="{{ url_for('manage_subscription') }}">My Subscription</a>
                     <span>Hello, {{ current_user.username }}!</span>
                     <a href="{{ url_for('logout') }}" role="button">Logout</a>
                 {% else %}
+                    <!-- Links for logged-out users -->
                     <a href="{{ url_for('login') }}" role="button">Login</a>
                     <a href="{{ url_for('register') }}" role="button">Register</a>
                 {% endif %}
@@ -42,6 +82,7 @@
     </header>
 
     <main>
+        <!-- Section for displaying flashed messages (e.g., "Login successful") -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -51,7 +92,10 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
+
+        <!-- This is where the content of child templates will be injected -->
         {% block content %}{% endblock %}
     </main>
+
 </body>
 </html>
