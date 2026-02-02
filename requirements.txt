@@ -1,0 +1,10 @@
+Flask
+gunicorn
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+email-validator
+stripe
+google-cloud-vision
+google-cloud-aiplatform
+google-cloud-storage
