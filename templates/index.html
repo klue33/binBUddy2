@@ -177,30 +177,66 @@
         }
     });
 
-    function renderMatches() {
-        matchContainer.innerHTML = '<h3>We found the following items. Please select a match:</h3>';
-        if (productMatches.length === 0) {
-            matchContainer.innerHTML += '<p>No confident matches found. Please try another image.</p>';
-        }
-        productMatches.forEach(product => {
-            matchContainer.innerHTML += `
-                <article class="match-card">
-                    <h3>${product.name}</h3>
-                    <p>${product.description}</p>
-                    <div class="comps-grid">
-                        <div><strong>Retail</strong><br>$${product.comps.retail.toFixed(2)}</div>
-                        <div><strong>High Comp</strong><br>$${product.comps.high.toFixed(2)}</div>
-                    </div>
-                    <button class="confirm-btn" data-product-id="${product.id}">✅ This is it!</button>
-                </article>
-            `;
-        });
+ <script>
+
+function renderMatches() {
+    // Check if the user was in multi-object mode by checking the number of results
+    const isMultiMode = productMatches.length > 1;
+
+    if (isMultiMode) {
+        matchContainer.innerHTML = '<h3>Scan Results: ' + productMatches.length + ' Items Found (Ranked by Value)</h3>';
+    } else {
+        matchContainer.innerHTML = '<h3>Result for Primary Item</h3>';
     }
 
-    function populateListingForm() {
+    if (productMatches.length === 0) {
+        matchContainer.innerHTML += '<p>No confident matches found. Please try another image.</p>';
+        return;
+    }
+
+    productMatches.forEach((product, index) => {
+        const isHighestValue = isMultiMode && index === 0;
+
+        // --- Build Attributes HTML ---
+        let attributesHtml = '<ul class="attributes-list">';
+        if (product.attributes && typeof product.attributes === 'object') {
+            for (const [key, value] of Object.entries(product.attributes)) {
+                if (value) attributesHtml += `<li><strong>${key}:</strong> ${value}</li>`;
+            }
+        }
+        attributesHtml += '</ul>';
+
+        // --- Build Final Card HTML ---
+        matchContainer.innerHTML += `
+            <article class="match-card ${isHighestValue ? 'highlighted' : ''}">
+                ${isHighestValue ? '<h4>★ #1 Highest Value ★</h4>' : ''}
+                <h3>${isMultiMode ? `#${index + 1}: ` : ''}${product.name}</h3>
+                <p><em>Brand: ${product.brand}</em></p>
+                
+                <!-- Only show full details for the top item in multi-mode -->
+                ${!isMultiMode || isHighestValue ? `<p>${product.description}</p>${attributesHtml}` : ''}
+                
+                <div class="comps-grid">
+                    <div><strong>Est. Value</strong><br>$${product.comps.high.toFixed(2)}</div>
+                </div>
+                <button class="confirm-btn" data-product-id="${product.id}">✅ Select to Create Listing</button>
+            </article>
+        `;
+    });  function populateListingForm() {
         document.getElementById('listing-title').value = `For Sale: ${confirmedProduct.name}`;
         document.getElementById('listing-description').value = confirmedProduct.description;
         document.getElementById('listing-price').value = (confirmedProduct.comps.retail * 0.65).toFixed(2);
     }
 </script>
+
+<style>
+    /* Add a style to make the highlighted card stand out */
+    .match-card.highlighted {
+        border: 2px solid var(--primary-color);
+        box-shadow: 0 0 10px var(--primary-color);
+    }
+</style>
+
+
+  
 {% endblock %}
