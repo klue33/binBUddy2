@@ -82,7 +82,34 @@
         <button type="button" onclick="alert('Listing content is ready to be copied!')">Generate Copy & Paste Listing</button>
     </form>
 </section>
+  <div id="crop-modal" class="modal-container hidden">
+        <div class="modal-content">
+            <h3>Crop Your Image</h3>
+            <p>Adjust the box to focus on the item you want to identify.</p>
+            <div class="img-container">
+                <img id="image-to-crop">
+            </div>
+            <button id="btn-crop-confirm">Crop & Confirm</button>
+        </div>
+    </div>
 
+<style>
+    /* Styles for the new Modal */
+    .modal-container {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal-content {
+        background-color: var(--background-color); padding: 2rem;
+        border-radius: 10px; max-width: 90vw; max-height: 90vh;
+    }
+    .img-container {
+        max-height: 60vh; margin: 1rem 0;
+    }
+    /* Cropper.js requires the img to be a block element */
+    #image-to-crop { display: block; max-width: 100%; }
+</style>
 <script>
     // --- STATE & DOM REFERENCES ---
     let productMatches = [];
@@ -231,4 +258,105 @@
         document.getElementById('listing-price').value = (confirmedProduct.comps.retail * 0.65).toFixed(2);
     }
 </script>
+<script>
+    // --- STATE & DOM REFERENCES ---
+    let productMatches = [];
+    let confirmedProduct = {};
+    let cropper = null; // Variable to hold the Cropper instance
+
+    // ... (all other DOM references like uploadSection, etc.)
+    const cropModal = document.getElementById('crop-modal');
+    const imageToCrop = document.getElementById('image-to-crop');
+    const btnCropConfirm = document.getElementById('btn-crop-confirm');
+
+    // --- EVENT LISTENERS ---
+
+    // 1. Listen for a file selection to INITIATE the cropping process.
+    fileInput.addEventListener('change', (e) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                // When the file is read, set it as the source for our image tag
+                imageToCrop.src = event.target.result;
+                // Show the modal
+                cropModal.classList.remove('hidden');
+                // Destroy any old cropper instance
+                if (cropper) {
+                    cropper.destroy();
+                }
+                // Initialize Cropper.js on the image
+                cropper = new Cropper(imageToCrop, {
+                    viewMode: 1, // Restrict the crop box to not exceed the size of the canvas.
+                    background: false,
+                    autoCropArea: 0.8,
+                });
+            };
+            // Read the image file as a Data URL
+            reader.readAsDataURL(files[0]);
+        }
+    });
+
+    // 2. Listen for the "Crop & Confirm" button click.
+    btnCropConfirm.addEventListener('click', () => {
+        if (!cropper) return;
+
+        // Get the cropped image data as a Blob
+        cropper.getCroppedCanvas({
+            width: 1024, // Resize for faster processing
+            height: 1024,
+            imageSmoothingQuality: 'high',
+        }).toBlob((blob) => {
+            // Hide the modal
+            cropModal.classList.add('hidden');
+            // Now that we have the cropped blob, show the action buttons
+            actionButtons.classList.remove('hidden');
+
+            // Store the blob to be used by the analysis functions
+            // This replaces using fileInput.files[0]
+            window.croppedImageBlob = blob;
+
+        }, 'image/jpeg');
+    });
+
+    // 3. The analysis buttons now use the stored blob.
+    btnIdentifyPrimary.addEventListener('click', () => handleImageAnalysis('single'));
+    btnScanAll.addEventListener('click', () => handleImageAnalysis('multi'));
+
+    // ... (matchContainer click listener remains the same)
+
+    // --- CORE FUNCTIONS ---
+
+    /**
+     * Main function updated to use the globally stored croppedImageBlob.
+     */
+    async function handleImageAnalysis(mode) {
+        if (!window.croppedImageBlob) {
+            alert("An image has not been cropped yet. Please upload and crop an image first.");
+            return;
+        }
+
+        const formData = new FormData();
+        // Append the blob instead of the original file
+        formData.append('file', window.croppedImageBlob, 'cropped.jpg');
+        formData.append('mode', mode);
+
+        loadingIndicator.classList.remove('hidden');
+        actionButtons.classList.add('hidden');
+        uploadForm.classList.add('hidden');
+
+        try {
+            const response = await fetch('/api/identify-item', { method: 'POST', body: formData });
+            // ... (The rest of this function remains exactly the same as before)
+            // ...
+        } catch (error) {
+            // ... (Error handling remains the same)
+        } finally {
+            // ... (Finally block remains the same)
+        }
+    }
+    
+    // ... (renderMatches and populateListingForm functions remain the same)
+</script>
+
 {% endblock %}
